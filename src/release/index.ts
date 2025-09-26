@@ -9,6 +9,8 @@ export const release = async (ctx: AppContext) => {
   const analysis = await analyze(ctx)
   await stage(ctx)
 
+  console.log(`Release methods enabled: ${ctx.release_methods.join(",")}`)
+
   if (ctx.release_methods.includes("git")) {
     await pushGitTag(`v${analysis.next_version}`, ctx)
   }
