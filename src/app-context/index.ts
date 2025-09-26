@@ -10,7 +10,12 @@ import fs from "fs/promises"
  * Everything in the context should be strictly defined, no "auto" or
  * semi-structured types etc.
  */
-export type ReleaseMethod = "git" | "npm" | "push-main" | "readme"
+export type ReleaseMethod =
+  | "git"
+  | "npm"
+  | "push-main"
+  | "readme"
+  | "package-json"
 
 export type AppContext = {
   current_directory?: string
@@ -37,6 +42,7 @@ export const getAppContext = async ({
   if (argv.npm) release_methods.push("npm")
   if (argv.pushMain) release_methods.push("push-main")
   if (argv.readme) release_methods.push("readme")
+  if (argv.packageJson) release_methods.push("package-json")
 
   if (argv.mdfile) {
     const mdfiles = Array.isArray(argv.mdfile) ? argv.mdfile : [argv.mdfile]

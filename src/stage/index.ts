@@ -26,7 +26,10 @@ export const stage = async (ctx: AppContext) => {
     await makeGitTag(`v${analysis.next_version}`, ctx)
   }
 
-  if (ctx.release_methods.includes("npm")) {
+  if (
+    ctx.release_methods.includes("npm") ||
+    ctx.release_methods.includes("package-json")
+  ) {
     await updatePackageJson(analysis.next_version, ctx)
     files_to_add.push("package.json")
   }
