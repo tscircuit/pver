@@ -19,5 +19,7 @@ export const release = async (ctx: AppContext) => {
     await npmPublish(ctx)
   }
 
-  await pushToMain(ctx)
+  if (ctx.release_methods.includes("push-main")) {
+    await pushToMain(ctx)
+  }
 }
