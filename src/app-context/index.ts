@@ -29,9 +29,9 @@ export const getAppContext = async ({
 }) => {
   const release_methods = argv.release_methods ?? []
 
-  if (argv.git) release_methods.add("git")
-  if (argv.npm) release_methods.add("npm")
-  if (argv.pushMain) release_methods.add("push-main")
+  if (argv.git) release_methods.push("git")
+  if (argv.npm) release_methods.push("npm")
+  if (argv.pushMain) release_methods.push("push-main")
 
   if (has_git_dir === undefined) {
     has_git_dir = await fs
@@ -47,10 +47,10 @@ export const getAppContext = async ({
   if (release_methods.length === 0) {
     // automatically determine release methods
     if (has_git_dir) {
-      release_methods.add("git")
-      release_methods.add("push-main")
+      release_methods.push("git")
+      release_methods.push("push-main")
     }
-    if (has_package_json) release_methods.add("npm")
+    if (has_package_json) release_methods.push("npm")
   }
 
   return {
