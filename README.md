@@ -66,10 +66,15 @@ pver release --git
 # Automatically compute the latest Pragmatic Version using the
 # git history and increment the version in the package.json file, and
 # the README.(md|txt) file
+pver release --git --package-json --readme
+
+# Publish the release to npm in addition to updating package.json
 pver release --git --npm --readme
 
 # Also available: --pyproject, --setuppy, --versionpy, --versionrb,
 #                 --mdfile somefile.md
+
+# Use --package-json when you only need the local version bump without an npm publish.
 
 # Explicitly release a version
 pver release increment --git

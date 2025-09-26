@@ -72,6 +72,10 @@ yargs(hideBin(process.argv))
           describe: "Increment version in package.json",
           type: "boolean",
         })
+        .option("package-json", {
+          describe: "Increment version in package.json without publishing to npm",
+          type: "boolean",
+        })
         .option("push-main", {
           describe: "Push the main branch after releasing",
           type: "boolean",
