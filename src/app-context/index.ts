@@ -10,12 +10,15 @@ import fs from "fs/promises"
  * Everything in the context should be strictly defined, no "auto" or
  * semi-structured types etc.
  */
+export type ReleaseMethod = "git" | "npm" | "push-main" | "readme"
+
 export type AppContext = {
   current_directory?: string
 
   current_method: "auto" | "package.json"
   transition_method: "auto" | "simplegit"
-  release_methods: Array<"git" | "npm" | "push-main">
+  release_methods: Array<ReleaseMethod>
+  readme_files: string[]
 }
 
 export const getAppContext = async ({
@@ -27,11 +30,26 @@ export const getAppContext = async ({
   has_package_json?: boolean
   has_git_dir?: boolean
 }) => {
-  const release_methods = argv.release_methods ?? []
+  const release_methods: Array<ReleaseMethod> = argv.release_methods ?? []
+  const readme_files: string[] = []
 
   if (argv.git) release_methods.push("git")
   if (argv.npm) release_methods.push("npm")
   if (argv.pushMain) release_methods.push("push-main")
+  if (argv.readme) release_methods.push("readme")
+
+  if (argv.mdfile) {
+    const mdfiles = Array.isArray(argv.mdfile) ? argv.mdfile : [argv.mdfile]
+    for (const file of mdfiles) {
+      if (typeof file === "string" && file.trim().length > 0) {
+        readme_files.push(file)
+      }
+    }
+  }
+
+  if (argv.readme && readme_files.length === 0) {
+    readme_files.push("README.md", "README.txt", "readme.md", "readme.txt")
+  }
 
   if (has_git_dir === undefined) {
     has_git_dir = await fs
@@ -57,6 +75,7 @@ export const getAppContext = async ({
     current_directory: process.cwd(),
     current_method: argv.current ?? "auto",
     transition_method: argv.transition ?? "auto",
-    release_methods: [...release_methods],
+    release_methods: [...new Set(release_methods)],
+    readme_files: [...new Set(readme_files)],
   }
 }

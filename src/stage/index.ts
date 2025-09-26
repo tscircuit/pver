@@ -4,6 +4,7 @@ import { AppContext } from "../app-context"
 import { updatePackageJson } from "./update-package-json"
 import { addCommitChanges } from "./add-commit-changes"
 import { makeSureGitConfigured } from "./make-sure-git-configured"
+import { updateReadme } from "./update-readme"
 
 export const stage = async (ctx: AppContext) => {
   const analysis = await analyze(ctx)
@@ -19,13 +20,25 @@ export const stage = async (ctx: AppContext) => {
 
   await makeSureGitConfigured(ctx)
 
+  const files_to_add: string[] = []
+
   if (ctx.release_methods.includes("git")) {
     await makeGitTag(`v${analysis.next_version}`, ctx)
   }
 
   if (ctx.release_methods.includes("npm")) {
     await updatePackageJson(analysis.next_version, ctx)
+    files_to_add.push("package.json")
   }
 
-  await addCommitChanges(analysis.next_version, ctx)
+  if (ctx.release_methods.includes("readme")) {
+    const readme_files = await updateReadme(
+      analysis.current_version,
+      analysis.next_version,
+      ctx
+    )
+    files_to_add.push(...readme_files)
+  }
+
+  await addCommitChanges(analysis.next_version, files_to_add, ctx)
 }
