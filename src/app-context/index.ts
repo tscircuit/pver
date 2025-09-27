@@ -16,7 +16,6 @@ export type ReleaseMethod =
   | "push-main"
   | "readme"
   | "package-json"
-  | "no-push-main"
 
 export type AppContext = {
   current_directory?: string
@@ -41,7 +40,7 @@ export const getAppContext = async ({
 
   if (argv.git) release_methods.push("git")
   if (argv.npm) release_methods.push("npm")
-  if (argv.pushMain && !argv.noPushMain) release_methods.push("push-main")
+  if (argv.pushMain) release_methods.push("push-main")
   if (argv.readme) release_methods.push("readme")
   if (argv.packageJson) release_methods.push("package-json")
 
@@ -73,7 +72,7 @@ export const getAppContext = async ({
     // automatically determine release methods
     if (has_git_dir) {
       release_methods.push("git")
-      if (!argv.noPushMain) {
+      if (argv.pushMain !== false) {
         release_methods.push("push-main")
       }
     }
