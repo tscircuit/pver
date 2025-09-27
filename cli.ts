@@ -80,6 +80,10 @@ yargs(hideBin(process.argv))
           describe: "Push the main branch after releasing",
           type: "boolean",
         })
+        .option("no-push-main", {
+          describe: "Disable pushing to main branch (overrides --push-main)",
+          type: "boolean",
+        })
         .option("readme", {
           describe: "Increment version in README files",
           type: "boolean",
