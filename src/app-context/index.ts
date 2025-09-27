@@ -16,6 +16,7 @@ export type ReleaseMethod =
   | "push-main"
   | "readme"
   | "package-json"
+  | "no-push-main"
 
 export type AppContext = {
   current_directory?: string
