@@ -43,5 +43,8 @@ export const stage = async (ctx: AppContext) => {
     files_to_add.push(...readme_files)
   }
 
-  await addCommitChanges(analysis.next_version, files_to_add, ctx)
+  // Only commit changes if we're pushing to main, otherwise leave changes 
+  if (ctx.release_methods.includes("push-main")) {
+    await addCommitChanges(analysis.next_version, files_to_add, ctx)
+  } 
 }
