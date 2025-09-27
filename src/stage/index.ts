@@ -43,8 +43,8 @@ export const stage = async (ctx: AppContext) => {
     files_to_add.push(...readme_files)
   }
 
-  // Only commit changes if we're pushing to main, otherwise leave changes 
-  if (ctx.release_methods.includes("push-main")) {
+  // Always commit changes if there are files to add, regardless of push-main setting
+  if (files_to_add.length > 0) {
     await addCommitChanges(analysis.next_version, files_to_add, ctx)
   } 
 }
