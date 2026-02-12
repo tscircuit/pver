@@ -116,6 +116,95 @@ jobs:
         NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
 ```
 
+### Usage with Protected Branches
+
+The default `GITHUB_TOKEN` provided by GitHub Actions does **not** have
+permission to push commits to branches that have branch protection rules
+enabled. To allow `pver` to push version bumps to a protected `main` branch
+you need to provide a token with elevated privileges.
+
+**Option A -- Personal Access Token (PAT)**
+
+1. Create a [fine-grained PAT](https://github.com/settings/personal-access-tokens)
+   with **Contents: Read and write** permission scoped to your repository.
+2. Under the repository's branch protection settings make sure the PAT owner
+   (or the "Allow specified actors to bypass required pull requests" list)
+   is allowed to push.
+3. Add the PAT as a repository secret (e.g. `PVER_GITHUB_TOKEN`).
+4. Update your workflow:
+
+```yml
+name: Publish to npm
+on:
+  push:
+    branches:
+      - main
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v4
+      with:
+        token: ${{ secrets.PVER_GITHUB_TOKEN }}
+    - uses: actions/setup-node@v4
+      with:
+        node-version: 20
+        registry-url: https://registry.npmjs.org/
+    - run: npm install -g pver
+    - run: npm ci
+    - run: pver release
+      env:
+        NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+        PVER_GITHUB_TOKEN: ${{ secrets.PVER_GITHUB_TOKEN }}
+```
+
+**Option B -- GitHub App Installation Token**
+
+If you prefer not to use a personal token you can create a
+[GitHub App](https://docs.github.com/en/apps/creating-github-apps) with
+**Contents: Read and write** permissions and install it on the repository.
+Use an action such as
+[`actions/create-github-app-token`](https://github.com/actions/create-github-app-token)
+to generate an installation token at runtime:
+
+```yml
+name: Publish to npm
+on:
+  push:
+    branches:
+      - main
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    steps:
+    - name: Generate app token
+      id: app-token
+      uses: actions/create-github-app-token@v1
+      with:
+        app-id: ${{ vars.PVER_APP_ID }}
+        private-key: ${{ secrets.PVER_APP_PRIVATE_KEY }}
+    - uses: actions/checkout@v4
+      with:
+        token: ${{ steps.app-token.outputs.token }}
+    - uses: actions/setup-node@v4
+      with:
+        node-version: 20
+        registry-url: https://registry.npmjs.org/
+    - run: npm install -g pver
+    - run: npm ci
+    - run: pver release
+      env:
+        NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+        PVER_GITHUB_TOKEN: ${{ steps.app-token.outputs.token }}
+```
+
+> [!NOTE]
+> The `token` passed to `actions/checkout` configures the git remote so that
+> subsequent `git push` calls use the elevated token. `PVER_GITHUB_TOKEN` is
+> read by `pver` as a fallback when it needs to reconfigure the remote origin
+> (e.g. when the remote URL is an SSH URL). If `PVER_GITHUB_TOKEN` is set it
+> takes priority over the default `GITHUB_TOKEN`.
+
 ## Analysis
 
 Analysis has two steps. Getting the `current_version` and using the `transition_method` to
