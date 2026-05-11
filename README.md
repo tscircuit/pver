@@ -116,6 +116,52 @@ jobs:
         NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
 ```
 
+### Using with Protected Branches
+
+If your `main` branch is protected, pver automatically handles this by falling back to the GitHub API. To use this feature:
+
+1. **Ensure your workflow has write permissions**:
+
+```yml
+name: Publish to npm
+on:
+  push:
+    branches:
+      - main
+
+permissions:
+  contents: write  # Required for updating files via API
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v3
+      with:
+        token: ${{ secrets.GITHUB_TOKEN }}  # Use GITHUB_TOKEN
+    - uses: actions/setup-node@v3
+      with:
+        node-version: 20
+        registry-url: https://registry.npmjs.org/
+    - run: npm install -g pver
+    - run: npm ci
+    - run: pver release
+      env:
+        NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}  # Ensure GITHUB_TOKEN is available
+```
+
+2. **Configure branch protection** (optional):
+   - Go to Settings → Branches → Branch protection rules
+   - Add a rule for `main`
+   - Enable "Allow GitHub Actions to bypass branch protection" (recommended)
+   
+   Even without this setting, pver will work because it uses the GitHub API
+   to update files directly, which can bypass protection rules when using
+   `GITHUB_TOKEN` from GitHub Actions.
+
+**How it works**: When pver detects that a regular `git push` is blocked due to branch protection, it automatically falls back to using the GitHub REST API to update files. This allows the release process to complete even on protected branches.
+
 ## Analysis
 
 Analysis has two steps. Getting the `current_version` and using the `transition_method` to
