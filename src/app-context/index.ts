@@ -24,6 +24,10 @@ export type AppContext = {
   transition_method: "auto" | "simplegit"
   release_methods: Array<ReleaseMethod>
   readme_files: string[]
+  push_main_strategy: "direct" | "pull-request"
+  release_branch?: string
+  release_pr_title?: string
+  release_pr_body?: string
 }
 
 export const getAppContext = async ({
@@ -85,5 +89,9 @@ export const getAppContext = async ({
     transition_method: argv.transition ?? "auto",
     release_methods: [...new Set(release_methods)],
     readme_files: [...new Set(readme_files)],
+    push_main_strategy: argv.pushMainStrategy ?? "direct",
+    release_branch: argv.releaseBranch,
+    release_pr_title: argv.releasePrTitle,
+    release_pr_body: argv.releasePrBody,
   }
 }

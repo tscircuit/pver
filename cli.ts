@@ -80,6 +80,27 @@ yargs(hideBin(process.argv))
           describe: "Push the main branch after releasing",
           type: "boolean",
         })
+        .option("push-main-strategy", {
+          describe:
+            "How to update the main branch when --push-main is enabled",
+          choices: ["direct", "pull-request"],
+          default: "direct",
+        })
+        .option("release-branch", {
+          describe:
+            "Branch name to use when --push-main-strategy=pull-request",
+          type: "string",
+        })
+        .option("release-pr-title", {
+          describe:
+            "Pull request title to use when --push-main-strategy=pull-request",
+          type: "string",
+        })
+        .option("release-pr-body", {
+          describe:
+            "Pull request body to use when --push-main-strategy=pull-request",
+          type: "string",
+        })
         .option("no-push-main", {
           describe: "Disable pushing to main branch (overrides --push-main)",
           type: "boolean",

@@ -2,6 +2,7 @@ import { analyze } from "../analyze"
 import { AppContext } from "../app-context"
 import { stage } from "../stage"
 import { npmPublish } from "./npm-publish"
+import { createReleasePullRequest } from "./create-release-pull-request"
 import { pushGitTag } from "./push-git-tag"
 import { pushToMain } from "./push-to-main"
 import { syncWithRemote } from "./sync-with-remote"
@@ -24,6 +25,10 @@ export const release = async (ctx: AppContext) => {
   }
 
   if (ctx.release_methods.includes("push-main")) {
-    await pushToMain(ctx)
+    if (ctx.push_main_strategy === "pull-request") {
+      await createReleasePullRequest(analysis.next_version, ctx)
+    } else {
+      await pushToMain(ctx)
+    }
   }
 }

@@ -38,6 +38,9 @@ on:
 jobs:
   publish:
     runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      pull-requests: write
     steps:
       - uses: actions/checkout@v3
       - uses: actions/setup-node@v3
@@ -70,6 +73,10 @@ pver release --git --package-json --readme
 
 # Publish the release to npm in addition to updating package.json
 pver release --git --npm --readme
+
+# If main is protected and requires pull requests, push the release commit
+# to a release branch and open a PR instead of pushing directly to main.
+pver release --git --package-json --readme --push-main --push-main-strategy=pull-request
 
 # Also available: --pyproject, --setuppy, --versionpy, --versionrb,
 #                 --mdfile somefile.md
@@ -115,6 +122,11 @@ jobs:
       env:
         NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
 ```
+
+If `main` is protected and requires pull requests, run `pver release` with
+`--push-main --push-main-strategy=pull-request`. The workflow will push the
+release commit to a `pver/vX.Y.Z` branch and open a pull request against the
+protected branch instead of pushing directly.
 
 ## Analysis
 
