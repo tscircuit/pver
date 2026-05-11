@@ -84,6 +84,15 @@ yargs(hideBin(process.argv))
           describe: "Disable pushing to main branch (overrides --push-main)",
           type: "boolean",
         })
+        .option("base-branch", {
+          describe: "Base branch to sync from before creating release commits",
+          type: "string",
+          default: "main",
+        })
+        .option("push-branch", {
+          describe: "Branch to push release commits to",
+          type: "string",
+        })
         .option("readme", {
           describe: "Increment version in README files",
           type: "boolean",

@@ -35,12 +35,14 @@ on:
   push:
     branches:
       - main
+permissions:
+  contents: write
 jobs:
   publish:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v3
-      - uses: actions/setup-node@v3
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
         with:
           node-version: 20
           registry-url: https://registry.npmjs.org/
@@ -49,7 +51,15 @@ jobs:
       - run: pver release
         env:
           NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+          GH_TOKEN: ${{ secrets.GH_TOKEN }}
 ```
+
+If `main` is protected, keep `contents: write` on the workflow and either:
+
+- allow GitHub Actions to bypass branch protection, then use a tokenized HTTPS remote via `GH_TOKEN` or `GITHUB_TOKEN`, or
+- set `--base-branch main --push-branch <release-branch>` and merge that branch through a PR instead of pushing to `main` directly.
+
+If you use a PAT in `GH_TOKEN`, it needs `repo` and `workflow` scopes.
 
 ## Usage
 
@@ -81,6 +91,9 @@ pver release increment --git
 pver release announce --git
 pver release bigrelease --git
 
+# Protected main branch workflow: sync from main, push release commits elsewhere
+pver release --push-main --git --package-json --base-branch main --push-branch release
+
 # Automatically compute the latest Pragmatic Version using the
 # git history, tag the current commit and stage the changes locally
 pver stage --git
@@ -100,12 +113,14 @@ on:
   push:
     branches:
       - main
+permissions:
+  contents: write
 jobs:
   publish:
     runs-on: ubuntu-latest
     steps:
-    - uses: actions/checkout@v3
-    - uses: actions/setup-node@v3
+    - uses: actions/checkout@v4
+    - uses: actions/setup-node@v4
       with:
         node-version: 20
         registry-url: https://registry.npmjs.org/
@@ -114,6 +129,7 @@ jobs:
     - run: pver release
       env:
         NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+        GH_TOKEN: ${{ secrets.GH_TOKEN }}
 ```
 
 ## Analysis
