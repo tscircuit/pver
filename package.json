@@ -9,6 +9,7 @@
   "scripts": {
     "cli": "esr ./cli.ts",
     "test:analyze": "esr ./cli.ts analyze",
+    "test:protected-branch": "esr ./tests/protected-branch.test.ts",
     "lint": "eslint",
     "typecheck": "tsc --noEmit",
     "build": "tsup ./cli.ts",

@@ -116,6 +116,43 @@ jobs:
         NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
 ```
 
+If your default branch is protected, use a token that is allowed to bypass the
+branch protection rules. The default GitHub Actions `GITHUB_TOKEN` usually
+cannot push directly to protected branches.
+
+Store the bypass-capable token as `PVER_GITHUB_TOKEN`, pass it to
+`actions/checkout`, and expose it to `pver`:
+
+```yml
+name: Publish to npm
+on:
+  push:
+    branches:
+      - main
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v4
+      with:
+        token: ${{ secrets.PVER_GITHUB_TOKEN }}
+    - uses: actions/setup-node@v4
+      with:
+        node-version: 20
+        registry-url: https://registry.npmjs.org/
+    - run: npm install -g pver
+    - run: npm ci
+    - run: pver release
+      env:
+        NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+        PVER_GITHUB_TOKEN: ${{ secrets.PVER_GITHUB_TOKEN }}
+```
+
+`PVER_GITHUB_TOKEN` takes priority over `GITHUB_TOKEN` when `pver` configures
+the git remote before pushing. Use a fine-grained PAT or GitHub App
+installation token with contents write access, and allow that actor to bypass
+the branch protection rule.
+
 ## Analysis
 
 Analysis has two steps. Getting the `current_version` and using the `transition_method` to
