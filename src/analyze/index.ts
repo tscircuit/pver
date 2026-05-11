@@ -10,6 +10,7 @@ export type Analysis = {
   transition_method: string
   current_version: string
   next_version: string
+  current_version_is_unreleased: boolean
 }
 
 export const analyze = async (ctx: AppContext): Promise<Analysis> => {
@@ -34,6 +35,24 @@ export const analyze = async (ctx: AppContext): Promise<Analysis> => {
     throw new Error(
       `Couldn't find current version using --current-method: ${ctx.current_method}[${current_method}]`
     )
+
+  const current_version_is_unreleased =
+    ctx.prepared_version &&
+    !(await checkIfGitTagExistsForVersion(ctx, current_version))
+
+  if (current_version_is_unreleased) {
+    console.log(
+      `Current package version ${current_version} was marked as prepared and has no matching git tag, releasing it as-is`
+    )
+
+    return {
+      current_method,
+      transition_method,
+      current_version,
+      next_version: current_version,
+      current_version_is_unreleased,
+    }
+  }
 
   let next_version
   if (transition_method === "simplegit") {
@@ -76,5 +95,6 @@ export const analyze = async (ctx: AppContext): Promise<Analysis> => {
     transition_method,
     current_version,
     next_version,
+    current_version_is_unreleased,
   }
 }
