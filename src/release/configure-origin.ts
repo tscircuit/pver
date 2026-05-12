@@ -1,26 +1,33 @@
+const getAuthenticatedRemoteUrl = (remoteUrl: string, token: string) => {
+  let url = remoteUrl.trim()
+
+  if (url.startsWith("git@github.com:")) {
+    url = url.replace("git@github.com:", "https://github.com/")
+  }
+
+  if (!url.startsWith("https://") || url.includes("@")) {
+    return url
+  }
+
+  const encodedToken = encodeURIComponent(token)
+
+  if (url.startsWith("https://github.com/")) {
+    return url.replace("https://", `https://x-access-token:${encodedToken}@`)
+  }
+
+  return url.replace("https://", `https://oauth2:${encodedToken}@`)
+}
+
 export const configureOrigin = async (git: any) => {
-  if (process.env.GITHUB_TOKEN) {
-    // This doesn't work- it's possible the checkout command needs to use the
-    // github token (in the workflow yaml)
-    const remote_url = await git.remote(["get-url", "origin"])
+  const githubToken = process.env.PVER_GITHUB_TOKEN ?? process.env.GITHUB_TOKEN
 
-    // if the remote is in the form of git@github.com:foo/bar.git, convert it to
-    // https://github.com/foo/bar.git
-    if (remote_url.includes("git@")) {
-      const new_url = remote_url!.replace("git@", "https://")
-      await git.removeRemote("origin")
-      await git.addRemote("origin", new_url)
-    }
+  if (!githubToken) return
 
-    if (!remote_url.includes("oauth2:")) {
-      const new_url = remote_url!
-        .replace(
-          "https://",
-          `https://oauth2:${process.env.GITHUB_TOKEN.trim()}@`
-        )
-        .replace(/\n/g, "")
-      await git.removeRemote("origin")
-      await git.addRemote("origin", new_url)
-    }
+  const remoteUrl = await git.remote(["get-url", "origin"])
+  const authenticatedRemoteUrl = getAuthenticatedRemoteUrl(remoteUrl, githubToken)
+
+  if (authenticatedRemoteUrl !== remoteUrl.trim()) {
+    await git.removeRemote("origin")
+    await git.addRemote("origin", authenticatedRemoteUrl)
   }
 }
