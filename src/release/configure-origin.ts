@@ -1,26 +1,28 @@
 export const configureOrigin = async (git: any) => {
-  if (process.env.GITHUB_TOKEN) {
-    // This doesn't work- it's possible the checkout command needs to use the
-    // github token (in the workflow yaml)
-    const remote_url = await git.remote(["get-url", "origin"])
+  // PVER_GITHUB_TOKEN takes precedence over GITHUB_TOKEN
+  // Use a PAT or GitHub App token with branch protection bypass permissions
+  const token = process.env.PVER_GITHUB_TOKEN || process.env.GITHUB_TOKEN
 
-    // if the remote is in the form of git@github.com:foo/bar.git, convert it to
-    // https://github.com/foo/bar.git
+  if (token) {
+    let remote_url: string = await git.remote(["get-url", "origin"])
+    remote_url = remote_url.replace(/\n/g, "").trim()
+
+    // Convert SSH remote URL to HTTPS format
+    // git@github.com:owner/repo.git → https://github.com/owner/repo.git
     if (remote_url.includes("git@")) {
-      const new_url = remote_url!.replace("git@", "https://")
-      await git.removeRemote("origin")
-      await git.addRemote("origin", new_url)
+      remote_url = remote_url
+        .replace(/git@([^:]+):/, "https://$1/")
     }
 
+    // Inject token for authentication if not already present
     if (!remote_url.includes("oauth2:")) {
-      const new_url = remote_url!
-        .replace(
-          "https://",
-          `https://oauth2:${process.env.GITHUB_TOKEN.trim()}@`
-        )
-        .replace(/\n/g, "")
-      await git.removeRemote("origin")
-      await git.addRemote("origin", new_url)
+      remote_url = remote_url.replace(
+        "https://",
+        `https://oauth2:${token}@`
+      )
     }
+
+    await git.removeRemote("origin")
+    await git.addRemote("origin", remote_url)
   }
 }
