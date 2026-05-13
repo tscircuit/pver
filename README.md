@@ -100,6 +100,8 @@ on:
   push:
     branches:
       - main
+permissions:
+  contents: write
 jobs:
   publish:
     runs-on: ubuntu-latest
@@ -115,6 +117,47 @@ jobs:
       env:
         NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
 ```
+
+### Protected branches
+
+GitHub's default `GITHUB_TOKEN` cannot bypass most protected-branch rules. If
+`pver release` needs to commit the version bump back to a protected `main`
+branch, provide a token that is allowed to bypass that branch protection and pass
+it to both checkout and pver:
+
+```yml
+name: Publish to npm
+on:
+  push:
+    branches:
+      - main
+permissions:
+  contents: write
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v4
+      with:
+        token: ${{ secrets.PVER_GITHUB_TOKEN }}
+        fetch-depth: 0
+    - uses: actions/setup-node@v4
+      with:
+        node-version: 20
+        registry-url: https://registry.npmjs.org/
+    - run: npm install -g pver
+    - run: npm ci
+    - run: pver release
+      env:
+        NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+        PVER_GITHUB_TOKEN: ${{ secrets.PVER_GITHUB_TOKEN }}
+```
+
+The `PVER_GITHUB_TOKEN` secret can be a fine-grained PAT from a repository admin
+when admins are allowed to bypass the rule, or a GitHub App installation token
+for an app/user listed in the branch protection bypass settings. `pver` prefers
+`PVER_GITHUB_TOKEN` over `GITHUB_TOKEN` so the release push can use the
+bypass-capable credential without changing the rest of the workflow.
 
 ## Analysis
 
