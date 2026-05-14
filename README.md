@@ -116,6 +116,88 @@ jobs:
         NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
 ```
 
+### Protected Branch Workflow
+
+If your `main` branch is protected (requires PRs, status checks, etc.), `pver`
+supports using a dedicated token that can bypass branch protection rules.
+
+Set `PVER_GITHUB_TOKEN` to a [Personal Access Token](https://docs.github.com/en/authentication/keeping-your-account-and-data-secure/managing-your-personal-access-tokens)
+or a [GitHub App installation token](https://docs.github.com/en/apps/creating-github-apps/authenticating-with-a-github-app/generating-an-installation-access-token-for-a-github-app)
+that has the "Allow specified actors to bypass required pull requests" permission
+in the branch protection rules.
+
+**Using a Fine-Grained PAT:**
+
+```yml
+name: Publish to npm
+on:
+  push:
+    branches:
+      - main
+
+permissions:
+  contents: write
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v4
+      with:
+        token: ${{ secrets.PVER_GITHUB_TOKEN }}
+    - uses: actions/setup-node@v4
+      with:
+        node-version: 20
+        registry-url: https://registry.npmjs.org/
+    - run: npm install -g pver
+    - run: npm ci
+    - run: pver release
+      env:
+        PVER_GITHUB_TOKEN: ${{ secrets.PVER_GITHUB_TOKEN }}
+        NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+```
+
+**Using a GitHub App:**
+
+```yml
+name: Publish to npm
+on:
+  push:
+    branches:
+      - main
+
+permissions:
+  contents: write
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/create-github-app-token@v1
+      id: app-token
+      with:
+        app-id: ${{ vars.RELEASE_APP_ID }}
+        private-key: ${{ secrets.RELEASE_APP_PRIVATE_KEY }}
+    - uses: actions/checkout@v4
+      with:
+        token: ${{ steps.app-token.outputs.token }}
+    - uses: actions/setup-node@v4
+      with:
+        node-version: 20
+        registry-url: https://registry.npmjs.org/
+    - run: npm install -g pver
+    - run: npm ci
+    - run: pver release
+      env:
+        PVER_GITHUB_TOKEN: ${{ steps.app-token.outputs.token }}
+        NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+```
+
+> **Note:** `PVER_GITHUB_TOKEN` takes precedence over `GITHUB_TOKEN`. If only
+> `GITHUB_TOKEN` is set, pver uses it as before (backward compatible). The
+> checkout step should also use the same token so the initial clone has the
+> correct credentials.
+
 ## Analysis
 
 Analysis has two steps. Getting the `current_version` and using the `transition_method` to
