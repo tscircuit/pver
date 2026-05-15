@@ -1,26 +1,41 @@
 export const configureOrigin = async (git: any) => {
-  if (process.env.GITHUB_TOKEN) {
-    // This doesn't work- it's possible the checkout command needs to use the
-    // github token (in the workflow yaml)
-    const remote_url = await git.remote(["get-url", "origin"])
+  const github_token = getGithubToken()
+  if (!github_token) return
 
-    // if the remote is in the form of git@github.com:foo/bar.git, convert it to
-    // https://github.com/foo/bar.git
-    if (remote_url.includes("git@")) {
-      const new_url = remote_url!.replace("git@", "https://")
-      await git.removeRemote("origin")
-      await git.addRemote("origin", new_url)
-    }
+  const remote_url = await git.remote(["get-url", "origin"])
+  const normalized_url = normalizeGithubRemoteUrl(remote_url)
+  const authenticated_url = addGithubTokenToRemoteUrl(
+    normalized_url,
+    github_token
+  )
 
-    if (!remote_url.includes("oauth2:")) {
-      const new_url = remote_url!
-        .replace(
-          "https://",
-          `https://oauth2:${process.env.GITHUB_TOKEN.trim()}@`
-        )
-        .replace(/\n/g, "")
-      await git.removeRemote("origin")
-      await git.addRemote("origin", new_url)
-    }
+  if (authenticated_url !== remote_url.trim()) {
+    await git.removeRemote("origin")
+    await git.addRemote("origin", authenticated_url)
   }
+}
+
+export const getGithubToken = () =>
+  process.env.PVER_GITHUB_TOKEN?.trim() || process.env.GITHUB_TOKEN?.trim()
+
+export const normalizeGithubRemoteUrl = (remote_url: string) => {
+  const trimmed_url = remote_url.trim()
+
+  return trimmed_url
+    .replace(/^git@github\.com:/, "https://github.com/")
+    .replace(/^ssh:\/\/git@github\.com\//, "https://github.com/")
+}
+
+export const addGithubTokenToRemoteUrl = (
+  remote_url: string,
+  github_token: string
+) => {
+  if (!remote_url.startsWith("https://github.com/")) {
+    return remote_url
+  }
+
+  return remote_url.replace(
+    "https://github.com/",
+    `https://oauth2:${encodeURIComponent(github_token.trim())}@github.com/`
+  )
 }
