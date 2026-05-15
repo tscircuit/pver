@@ -116,6 +116,26 @@ jobs:
         NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
 ```
 
+### Protected Branch Setup
+
+If `main` is a protected branch, the default `GITHUB_TOKEN` cannot push directly.
+Use `PVER_GITHUB_TOKEN` — a Personal Access Token (classic) with `repo` scope, or
+a fine-grained PAT with *Contents: Read & Write* — added to repository secrets and
+listed as a **bypass actor** in the branch protection rules.
+
+```yml
+    - uses: actions/checkout@v4
+      with:
+        token: ${{ secrets.PVER_GITHUB_TOKEN }}   # checkout with the bypass token
+    - run: pver release
+      env:
+        PVER_GITHUB_TOKEN: ${{ secrets.PVER_GITHUB_TOKEN }}
+        NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+```
+
+`pver` prefers `PVER_GITHUB_TOKEN` over `GITHUB_TOKEN` when configuring the push
+remote, so adding the secret and updating the workflow is all that is required.
+
 ## Analysis
 
 Analysis has two steps. Getting the `current_version` and using the `transition_method` to
