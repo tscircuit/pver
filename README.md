@@ -72,6 +72,7 @@ pver release --git --package-json --readme
 pver release --git --npm --readme
 
 # Also available: --pyproject, --setuppy, --versionpy, --versionrb,
+#                 --prepared-version,
 #                 --mdfile somefile.md
 
 # Use --package-json when you only need the local version bump without an npm publish.
@@ -85,6 +86,8 @@ pver release bigrelease --git
 # git history, tag the current commit and stage the changes locally
 pver stage --git
 pver stage increment --git --npm
+pver stage --package-json --readme
+pver stage --package-json --mdfile CHANGELOG.md
 
 # Setup a Github repository to automatically release with pragmatic versions
 pver setup github
@@ -100,11 +103,15 @@ on:
   push:
     branches:
       - main
+permissions:
+  contents: write
 jobs:
   publish:
     runs-on: ubuntu-latest
     steps:
     - uses: actions/checkout@v3
+      with:
+        fetch-depth: 0
     - uses: actions/setup-node@v3
       with:
         node-version: 20
@@ -115,6 +122,71 @@ jobs:
       env:
         NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
 ```
+
+### Protected Branches
+
+`pver release` normally creates a version commit and pushes it back to `main`.
+That push is rejected when `main` is protected unless the token used by the
+workflow is allowed to bypass the branch protection rule.
+
+There are two supported protected-branch patterns:
+
+#### Option A: allow a release token to push the version commit
+
+Use a fine-grained PAT or GitHub App installation token that has `contents: write`
+and is allowed to bypass the `main` branch protection rule. Store it as a secret
+named `PVER_GITHUB_TOKEN`, pass it to `actions/checkout`, and expose it to
+`pver release`:
+
+```yml
+name: Publish to npm
+on:
+  push:
+    branches:
+      - main
+permissions:
+  contents: write
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          token: ${{ secrets.PVER_GITHUB_TOKEN }}
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          registry-url: https://registry.npmjs.org/
+      - run: npm ci
+      - run: npx pver release --git --package-json --push-main
+        env:
+          PVER_GITHUB_TOKEN: ${{ secrets.PVER_GITHUB_TOKEN }}
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+```
+
+`PVER_GITHUB_TOKEN` takes priority over the default `GITHUB_TOKEN` when `pver`
+configures the `origin` remote before pushing. This lets protected repositories
+keep the default GitHub Actions token restricted while giving the release job an
+explicit, auditable bypass token.
+
+#### Option B: do not push to `main` from the release job
+
+If your branch protection requires all changes to arrive through pull requests,
+prepare the version bump in a normal PR, then publish from `main` without pushing
+a new commit back to the protected branch:
+
+```bash
+pver stage --git --package-json --readme
+# open a PR with the version bump, merge it, then run:
+pver release --git --npm --no-push-main --prepared-version
+```
+
+With `--prepared-version`, when `package.json` already contains a version that
+has no matching git tag yet, `pver release` publishes that version as-is instead
+of incrementing again.
+
+Use this pattern when no bot or app is allowed to bypass branch protection.
 
 ## Analysis
 

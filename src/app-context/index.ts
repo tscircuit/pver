@@ -22,6 +22,7 @@ export type AppContext = {
 
   current_method: "auto" | "package.json"
   transition_method: "auto" | "simplegit"
+  prepared_version: boolean
   release_methods: Array<ReleaseMethod>
   readme_files: string[]
 }
@@ -40,11 +41,12 @@ export const getAppContext = async ({
 
   if (argv.git) release_methods.push("git")
   if (argv.npm) release_methods.push("npm")
-  if (argv.pushMain) release_methods.push("push-main")
+  if (argv.pushMain && !argv.noPushMain) release_methods.push("push-main")
   if (argv.readme) release_methods.push("readme")
   if (argv.packageJson) release_methods.push("package-json")
 
   if (argv.mdfile) {
+    release_methods.push("readme")
     const mdfiles = Array.isArray(argv.mdfile) ? argv.mdfile : [argv.mdfile]
     for (const file of mdfiles) {
       if (typeof file === "string" && file.trim().length > 0) {
@@ -72,17 +74,23 @@ export const getAppContext = async ({
     // automatically determine release methods
     if (has_git_dir) {
       release_methods.push("git")
-      if (argv.pushMain !== false) {
+      if (!argv.noPushMain) {
         release_methods.push("push-main")
       }
     }
     if (has_package_json) release_methods.push("npm")
   }
 
+  if (argv.noPushMain) {
+    const push_main_index = release_methods.indexOf("push-main")
+    if (push_main_index !== -1) release_methods.splice(push_main_index, 1)
+  }
+
   return {
     current_directory: process.cwd(),
     current_method: argv.current ?? "auto",
     transition_method: argv.transition ?? "auto",
+    prepared_version: Boolean(argv.preparedVersion),
     release_methods: [...new Set(release_methods)],
     readme_files: [...new Set(readme_files)],
   }
