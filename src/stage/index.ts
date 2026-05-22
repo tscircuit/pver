@@ -6,7 +6,10 @@ import { addCommitChanges } from "./add-commit-changes"
 import { makeSureGitConfigured } from "./make-sure-git-configured"
 import { updateReadme } from "./update-readme"
 
-export const stage = async (ctx: AppContext) => {
+export const stage = async (
+  ctx: AppContext,
+  opts: { skipTag?: boolean } = {}
+) => {
   const analysis = await analyze(ctx)
   console.log(`current version: ${analysis.current_version}`)
   console.log(`next version: ${analysis.next_version}`)
@@ -21,10 +24,6 @@ export const stage = async (ctx: AppContext) => {
   await makeSureGitConfigured(ctx)
 
   const files_to_add: string[] = []
-
-  if (ctx.release_methods.includes("git")) {
-    await makeGitTag(`v${analysis.next_version}`, ctx)
-  }
 
   if (
     ctx.release_methods.includes("npm") ||
@@ -46,5 +45,9 @@ export const stage = async (ctx: AppContext) => {
   // Always commit changes if there are files to add, regardless of push-main setting
   if (files_to_add.length > 0) {
     await addCommitChanges(analysis.next_version, files_to_add, ctx)
-  } 
+  }
+
+  if (ctx.release_methods.includes("git") && !opts.skipTag) {
+    await makeGitTag(`v${analysis.next_version}`, ctx)
+  }
 }
