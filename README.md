@@ -116,6 +116,35 @@ jobs:
         NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
 ```
 
+#### Protected branches
+
+If your release workflow needs to push the version bump back to a protected
+branch, provide a token that is allowed to bypass that branch protection as
+`PVER_GITHUB_TOKEN`.
+
+```yml
+permissions:
+  contents: write
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+        with:
+          fetch-depth: 0
+      - run: npm ci
+      - run: pver release
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+          PVER_GITHUB_TOKEN: ${{ secrets.PVER_GITHUB_TOKEN }}
+```
+
+`PVER_GITHUB_TOKEN` takes precedence over `GITHUB_TOKEN`. Use a fine-grained PAT
+or GitHub App token with contents write access, then add that token's actor to
+the branch protection bypass list. `GITHUB_TOKEN` can still be used for normal
+branches where no bypass is required.
+
 ## Analysis
 
 Analysis has two steps. Getting the `current_version` and using the `transition_method` to
