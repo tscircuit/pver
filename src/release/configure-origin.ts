@@ -1,26 +1,28 @@
+// Configures the git remote origin URL to include a GitHub token so that
+// pver can push commits and tags. Prefers PVER_GITHUB_TOKEN (a PAT that can
+// bypass branch-protection rules) and falls back to GITHUB_TOKEN.
 export const configureOrigin = async (git: any) => {
-  if (process.env.GITHUB_TOKEN) {
-    // This doesn't work- it's possible the checkout command needs to use the
-    // github token (in the workflow yaml)
-    const remote_url = await git.remote(["get-url", "origin"])
+  const token = process.env.PVER_GITHUB_TOKEN || process.env.GITHUB_TOKEN
+  if (!token) return
 
-    // if the remote is in the form of git@github.com:foo/bar.git, convert it to
-    // https://github.com/foo/bar.git
-    if (remote_url.includes("git@")) {
-      const new_url = remote_url!.replace("git@", "https://")
-      await git.removeRemote("origin")
-      await git.addRemote("origin", new_url)
-    }
+  const encodedToken = encodeURIComponent(token.trim())
+  const remote_url: string = (await git.remote(["get-url", "origin"])).trim()
 
-    if (!remote_url.includes("oauth2:")) {
-      const new_url = remote_url!
-        .replace(
-          "https://",
-          `https://oauth2:${process.env.GITHUB_TOKEN.trim()}@`
-        )
-        .replace(/\n/g, "")
-      await git.removeRemote("origin")
-      await git.addRemote("origin", new_url)
-    }
-  }
+  // Normalise SSH → HTTPS before embedding credentials
+  let https_url = remote_url.startsWith("git@")
+    ? remote_url
+        .replace("git@github.com:", "https://github.com/")
+        .replace(/\.git$/, "")
+    : remote_url
+
+  // Strip any existing embedded credentials so we don't double-embed
+  https_url = https_url.replace(/https:\/\/[^@]+@/, "https://")
+
+  const authenticated_url = https_url.replace(
+    "https://",
+    `https://oauth2:${encodedToken}@`,
+  )
+
+  await git.removeRemote("origin")
+  await git.addRemote("origin", authenticated_url)
 }
