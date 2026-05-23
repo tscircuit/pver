@@ -103,6 +103,8 @@ on:
 jobs:
   publish:
     runs-on: ubuntu-latest
+    permissions:
+      contents: write
     steps:
     - uses: actions/checkout@v3
     - uses: actions/setup-node@v3
@@ -114,7 +116,13 @@ jobs:
     - run: pver release
       env:
         NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+        PVER_GITHUB_TOKEN: ${{ secrets.PVER_GITHUB_TOKEN }}
 ```
+
+If your `main` branch is protected, set `PVER_GITHUB_TOKEN` to a token (or
+GitHub App token) that can push to `main` under your branch protection rules.
+`pver` prefers `PVER_GITHUB_TOKEN` over `GITHUB_TOKEN` for origin
+authentication.
 
 ## Analysis
 
