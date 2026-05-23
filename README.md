@@ -51,6 +51,65 @@ jobs:
           NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
 ```
 
+If `main` is protected, GitHub's default `GITHUB_TOKEN` usually can't push the release commit back to `main`. In that case, provide `PVER_GITHUB_TOKEN` with a token that is allowed to bypass branch protection, such as a fine-grained PAT or a GitHub App installation token.
+
+Example with a fine-grained PAT:
+
+```yml
+name: Publish to npm
+on:
+  push:
+    branches:
+      - main
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          token: ${{ secrets.PVER_GITHUB_TOKEN }}
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          registry-url: https://registry.npmjs.org/
+      - run: npm ci
+      - run: npx pver release
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+          PVER_GITHUB_TOKEN: ${{ secrets.PVER_GITHUB_TOKEN }}
+```
+
+Example with a GitHub App token:
+
+```yml
+name: Publish to npm
+on:
+  push:
+    branches:
+      - main
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    steps:
+      - id: app-token
+        uses: actions/create-github-app-token@v1
+        with:
+          app-id: ${{ secrets.PVER_APP_ID }}
+          private-key: ${{ secrets.PVER_APP_PRIVATE_KEY }}
+      - uses: actions/checkout@v4
+        with:
+          token: ${{ steps.app-token.outputs.token }}
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          registry-url: https://registry.npmjs.org/
+      - run: npm ci
+      - run: npx pver release
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+          PVER_GITHUB_TOKEN: ${{ steps.app-token.outputs.token }}
+```
+
 ## Usage
 
 ```bash
@@ -104,8 +163,10 @@ jobs:
   publish:
     runs-on: ubuntu-latest
     steps:
-    - uses: actions/checkout@v3
-    - uses: actions/setup-node@v3
+    - uses: actions/checkout@v4
+      with:
+        token: ${{ secrets.PVER_GITHUB_TOKEN }}
+    - uses: actions/setup-node@v4
       with:
         node-version: 20
         registry-url: https://registry.npmjs.org/
@@ -114,6 +175,7 @@ jobs:
     - run: pver release
       env:
         NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+        PVER_GITHUB_TOKEN: ${{ secrets.PVER_GITHUB_TOKEN }}
 ```
 
 ## Analysis
