@@ -15,6 +15,7 @@ interface ReleaseOptions {
   versionpy?: boolean
   versionrb?: boolean
   mdfile?: string
+  preparedVersion?: boolean
 }
 
 if (process.env.NPM_TOKEN && !process.env.NODE_AUTH_TOKEN) {
@@ -84,6 +85,11 @@ yargs(hideBin(process.argv))
           describe: "Disable pushing to main branch (overrides --push-main)",
           type: "boolean",
         })
+        .option("prepared-version", {
+          describe:
+            "Release the version already committed in package.json when it has no matching git tag",
+          type: "boolean",
+        })
         .option("readme", {
           describe: "Increment version in README files",
           type: "boolean",
@@ -114,6 +120,18 @@ yargs(hideBin(process.argv))
         .option("npm", {
           describe: "Stage version in package.json",
           type: "boolean",
+        })
+        .option("package-json", {
+          describe: "Stage version in package.json without publishing to npm",
+          type: "boolean",
+        })
+        .option("readme", {
+          describe: "Stage version updates in README files",
+          type: "boolean",
+        })
+        .option("mdfile", {
+          describe: "Specific markdown file(s) to update while staging",
+          type: "array",
         })
     },
     async (argv) => {

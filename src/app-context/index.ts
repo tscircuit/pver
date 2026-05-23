@@ -22,6 +22,7 @@ export type AppContext = {
 
   current_method: "auto" | "package.json"
   transition_method: "auto" | "simplegit"
+  prepared_version: boolean
   release_methods: Array<ReleaseMethod>
   readme_files: string[]
 }
@@ -45,6 +46,7 @@ export const getAppContext = async ({
   if (argv.packageJson) release_methods.push("package-json")
 
   if (argv.mdfile) {
+    release_methods.push("readme")
     const mdfiles = Array.isArray(argv.mdfile) ? argv.mdfile : [argv.mdfile]
     for (const file of mdfiles) {
       if (typeof file === "string" && file.trim().length > 0) {
@@ -83,6 +85,7 @@ export const getAppContext = async ({
     current_directory: process.cwd(),
     current_method: argv.current ?? "auto",
     transition_method: argv.transition ?? "auto",
+    prepared_version: Boolean(argv.preparedVersion),
     release_methods: [...new Set(release_methods)],
     readme_files: [...new Set(readme_files)],
   }

@@ -13,7 +13,10 @@ export const stage = async (
   const analysis = await analyze(ctx)
   console.log(`current version: ${analysis.current_version}`)
   console.log(`next version: ${analysis.next_version}`)
-  if (analysis.current_version === analysis.next_version) {
+  if (
+    analysis.current_version === analysis.next_version &&
+    !analysis.current_version_is_unreleased
+  ) {
     throw new Error(
       `Next version is the same as current version, not releasing. Check the transition method if you expected a version bump`
     )
@@ -29,17 +32,25 @@ export const stage = async (
     ctx.release_methods.includes("npm") ||
     ctx.release_methods.includes("package-json")
   ) {
-    await updatePackageJson(analysis.next_version, ctx)
-    files_to_add.push("package.json")
+    if (analysis.current_version_is_unreleased) {
+      console.log("package.json already contains the unreleased target version")
+    } else {
+      await updatePackageJson(analysis.next_version, ctx)
+      files_to_add.push("package.json")
+    }
   }
 
   if (ctx.release_methods.includes("readme")) {
-    const readme_files = await updateReadme(
-      analysis.current_version,
-      analysis.next_version,
-      ctx
-    )
-    files_to_add.push(...readme_files)
+    if (analysis.current_version_is_unreleased) {
+      console.log("README version updates are already expected to be committed")
+    } else {
+      const readme_files = await updateReadme(
+        analysis.current_version,
+        analysis.next_version,
+        ctx
+      )
+      files_to_add.push(...readme_files)
+    }
   }
 
   // Always commit changes if there are files to add, regardless of push-main setting
