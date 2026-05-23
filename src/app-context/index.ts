@@ -1,4 +1,4 @@
-import fs from "fs/promises"
+import { promises as fs } from "fs"
 
 /**
  * The AppContext stores directory, arg, flag and config information and is
@@ -24,6 +24,7 @@ export type AppContext = {
   transition_method: "auto" | "simplegit"
   release_methods: Array<ReleaseMethod>
   readme_files: string[]
+  push_via_api?: boolean
 }
 
 export const getAppContext = async ({
@@ -83,7 +84,8 @@ export const getAppContext = async ({
     current_directory: process.cwd(),
     current_method: argv.current ?? "auto",
     transition_method: argv.transition ?? "auto",
-    release_methods: [...new Set(release_methods)],
-    readme_files: [...new Set(readme_files)],
+    release_methods: Array.from(new Set(release_methods)),
+    readme_files: Array.from(new Set(readme_files)),
+    push_via_api: argv.pushViaApi ?? false,
   }
 }

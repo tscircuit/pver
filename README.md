@@ -90,7 +90,84 @@ pver stage increment --git --npm
 pver setup github
 ```
 
-### Usage in Github Actions
+## Working with Protected Branches
+
+`pver` supports pushing to protected branches using GitHub's Git Data API. This is useful when your repository has branch protection rules that prevent direct pushes.
+
+### Automatic Fallback
+
+By default, `pver` will try a normal `git push` first. If it fails due to branch protection, it will automatically fall back to using the GitHub Git Data API:
+
+```bash
+pver release --git --npm
+```
+
+### Explicit Git Data API Usage
+
+You can explicitly use the Git Data API with the `--push-via-api` flag:
+
+```bash
+pver release --git --npm --push-via-api
+```
+
+### Authentication
+
+The Git Data API requires a GitHub token with appropriate permissions. Set one of these environment variables:
+
+- `PVER_GITHUB_TOKEN` (preferred)
+- `GITHUB_TOKEN` (fallback)
+
+The token needs:
+- `repo` scope for private repositories
+- `public_repo` scope for public repositories
+- For protected branches: the token must have "bypass branch protections" permission (typically requires admin access or a GitHub App)
+
+### GitHub Actions Example
+
+```yml
+name: Publish to npm
+on:
+  push:
+    branches:
+      - main
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write  # Required for Git Data API
+    steps:
+      - uses: actions/checkout@v3
+        with:
+          fetch-depth: 0  # Fetch full history for version analysis
+      - uses: actions/setup-node@v3
+        with:
+          node-version: 20
+          registry-url: https://registry.npmjs.org/
+      - run: npm install -g pver
+      - run: npm ci
+      - run: pver release
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+          PVER_GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+```
+
+### How Git Data API Differs from Other Approaches
+
+The Git Data API approach is fundamentally different from:
+
+1. **SSH Key Normalization**: Other solutions modify the git remote URL to use SSH with authentication. This still uses `git push` under the hood, which respects branch protection rules.
+
+2. **Contents API (PR #18)**: The Contents API is designed for single-file updates and creates commits through a different mechanism. It's limited to individual file operations.
+
+3. **Git Data API (this implementation)**: Uses GitHub's low-level Git Data API to:
+   - Create blobs for changed files
+   - Create a new tree object
+   - Create a new commit object
+   - Update the branch reference directly
+   
+   This bypasses the normal push flow and works with tokens that have "bypass branch protections" permission.
+
+### Usage in GitHub Actions
 
 Drop this into `.github/workflows/publish.yml`
 

@@ -84,6 +84,10 @@ yargs(hideBin(process.argv))
           describe: "Disable pushing to main branch (overrides --push-main)",
           type: "boolean",
         })
+        .option("push-via-api", {
+          describe: "Use GitHub Git Data API to push (bypasses branch protection)",
+          type: "boolean",
+        })
         .option("readme", {
           describe: "Increment version in README files",
           type: "boolean",
