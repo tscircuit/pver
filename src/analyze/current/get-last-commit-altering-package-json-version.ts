@@ -1,5 +1,6 @@
 import { AppContext } from "../../app-context"
 import simpleGit from "simple-git"
+import { getBaseBranch } from "../../release/get-branch-targets"
 
 export const getLastCommitAlteringPackageJsonVersion = async (
   ctx: AppContext
@@ -12,8 +13,8 @@ export const getLastCommitAlteringPackageJsonVersion = async (
     // Only one commit in the log usually means that we're on a github action
     // with the checkout depth set to 1 (the default). Let's pull in some
     // commits
-    // Fetch history of main branch TODO detect main branch
-    await git.fetch(["origin", "main", "--depth=30"])
+    // Fetch history of the base branch so shallow protected-branch workflows work
+    await git.fetch(["origin", getBaseBranch(ctx), "--depth=30"])
     log = await git.log({ file: "package.json" })
   }
 

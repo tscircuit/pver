@@ -1,26 +1,23 @@
 export const configureOrigin = async (git: any) => {
-  if (process.env.GITHUB_TOKEN) {
-    // This doesn't work- it's possible the checkout command needs to use the
-    // github token (in the workflow yaml)
-    const remote_url = await git.remote(["get-url", "origin"])
+  const github_token = process.env.GH_TOKEN?.trim() || process.env.GITHUB_TOKEN?.trim()
 
-    // if the remote is in the form of git@github.com:foo/bar.git, convert it to
-    // https://github.com/foo/bar.git
-    if (remote_url.includes("git@")) {
-      const new_url = remote_url!.replace("git@", "https://")
-      await git.removeRemote("origin")
-      await git.addRemote("origin", new_url)
-    }
+  if (github_token) {
+    const remote_url = (await git.remote(["get-url", "origin"])).trim()
 
-    if (!remote_url.includes("oauth2:")) {
-      const new_url = remote_url!
-        .replace(
-          "https://",
-          `https://oauth2:${process.env.GITHUB_TOKEN.trim()}@`
-        )
-        .replace(/\n/g, "")
+    // Normalize SSH remotes to HTTPS before injecting the token.
+    const https_remote_url = remote_url
+      .replace(/^git@github\.com:/, "https://github.com/")
+      .replace(/^ssh:\/\/git@github\.com\//, "https://github.com/")
+      .replace(/^https:\/\/(?:oauth2:[^@]+@)?github\.com\//, "https://github.com/")
+
+    const tokenized_remote_url = https_remote_url.replace(
+      "https://github.com/",
+      `https://oauth2:${github_token}@github.com/`
+    )
+
+    if (tokenized_remote_url !== remote_url) {
       await git.removeRemote("origin")
-      await git.addRemote("origin", new_url)
+      await git.addRemote("origin", tokenized_remote_url)
     }
   }
 }

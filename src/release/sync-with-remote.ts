@@ -1,17 +1,19 @@
 import simpleGit, { SimpleGit } from "simple-git"
 import { AppContext } from "../app-context"
 import { configureOrigin } from "./configure-origin"
+import { getBaseBranch } from "./get-branch-targets"
 
 export const syncWithRemote = async (ctx: AppContext) => {
-  console.log("Syncing with remote main")
+  const base_branch = getBaseBranch(ctx)
+  console.log(`Syncing with remote ${base_branch}`)
   let git: SimpleGit = simpleGit(ctx.current_directory)
 
   await configureOrigin(git)
 
-  // Pull main and rebase to sync with remote
-  // This establishes the origin/main reference needed for workflows
+  // Pull the base branch and rebase to sync with remote
+  // This establishes the origin/<base_branch> reference needed for workflows
   try {
-    await git.pull("origin", "main", ["--rebase"])
+    await git.pull("origin", base_branch, ["--rebase"])
   } catch (e: any) {
     if (e.toString().includes("unstaged changes")) {
       const status = await git.status()

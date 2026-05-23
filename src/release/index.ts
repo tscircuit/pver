@@ -15,7 +15,7 @@ export const release = async (ctx: AppContext) => {
 
   console.log(`Release methods enabled: ${ctx.release_methods.join(",")}`)
 
-  // Always sync with remote to establish origin/main reference for workflows
+  // Always sync with remote to establish the tracked base branch reference for workflows
   await syncWithRemote(ctx)
 
   if (ctx.release_methods.includes("git")) {

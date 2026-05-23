@@ -24,6 +24,8 @@ export type AppContext = {
   transition_method: "auto" | "simplegit"
   release_methods: Array<ReleaseMethod>
   readme_files: string[]
+  base_branch: string
+  push_branch?: string
 }
 
 export const getAppContext = async ({
@@ -57,6 +59,15 @@ export const getAppContext = async ({
     readme_files.push("README.md", "README.txt", "readme.md", "readme.txt")
   }
 
+  const base_branch =
+    typeof argv.baseBranch === "string" && argv.baseBranch.trim().length > 0
+      ? argv.baseBranch.trim()
+      : "main"
+  const push_branch =
+    typeof argv.pushBranch === "string" && argv.pushBranch.trim().length > 0
+      ? argv.pushBranch.trim()
+      : undefined
+
   if (has_git_dir === undefined) {
     has_git_dir = await fs
       .stat(".git")
@@ -85,5 +96,7 @@ export const getAppContext = async ({
     transition_method: argv.transition ?? "auto",
     release_methods: [...new Set(release_methods)],
     readme_files: [...new Set(readme_files)],
+    base_branch,
+    push_branch,
   }
 }
