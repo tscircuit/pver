@@ -116,6 +116,34 @@ jobs:
         NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
 ```
 
+### Protected main branches
+
+If your release workflow commits version changes back to a protected branch, the
+default `GITHUB_TOKEN` may be rejected by branch protection rules. Create a
+separate fine-grained token or GitHub App token for the release actor, grant it
+the branch-protection bypass your repository requires, and expose it to the
+workflow as `PVER_GITHUB_TOKEN`.
+
+```yml
+permissions:
+  contents: write
+
+steps:
+  - uses: actions/checkout@v4
+    with:
+      fetch-depth: 0
+  - run: npm ci
+  - run: pver release --git --package-json --push-main
+    env:
+      PVER_GITHUB_TOKEN: ${{ secrets.PVER_GITHUB_TOKEN }}
+      NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+```
+
+`PVER_GITHUB_TOKEN` takes precedence over `GITHUB_TOKEN`. `pver` rewrites
+GitHub `origin` remotes, including SSH remotes such as
+`git@github.com:owner/repo.git`, to an authenticated HTTPS remote before
+pushing.
+
 ## Analysis
 
 Analysis has two steps. Getting the `current_version` and using the `transition_method` to
