@@ -116,6 +116,43 @@ jobs:
         NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
 ```
 
+### Protected branches
+
+If your default branch is protected, `GITHUB_TOKEN` may not be allowed to push
+the release commit directly. Create a release token that is allowed by your
+branch protection rules, store it as `PVER_GITHUB_TOKEN`, and let `pver` use it
+only for the authenticated release push.
+
+```yml
+name: Publish to npm
+on:
+  push:
+    branches:
+      - main
+permissions:
+  contents: write
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v4
+      with:
+        persist-credentials: false
+    - uses: actions/setup-node@v4
+      with:
+        node-version: 20
+        registry-url: https://registry.npmjs.org/
+    - run: npm ci
+    - run: pver release
+      env:
+        NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+        PVER_GITHUB_TOKEN: ${{ secrets.PVER_GITHUB_TOKEN }}
+```
+
+`PVER_GITHUB_TOKEN` takes precedence over `GITHUB_TOKEN`. `pver` will normalize
+GitHub SSH remotes such as `git@github.com:owner/repo.git` before injecting the
+token, so the same workflow works with either SSH or HTTPS checkout remotes.
+
 ## Analysis
 
 Analysis has two steps. Getting the `current_version` and using the `transition_method` to
