@@ -51,19 +51,13 @@ export const analyze = async (ctx: AppContext): Promise<Analysis> => {
       process.exit(0)
     }
     if (next_version !== current_version) {
-      for (let i = 0; i < 10; i++) {
-        if (!(await checkIfGitTagExistsForVersion(ctx, next_version))) break
+      while (await checkIfGitTagExistsForVersion(ctx, next_version)) {
         console.log(
           `Next version already exists as a git tag: ${next_version}. Incrementing version by an increment.`
         )
         next_version = getNextVersion(next_version, "increment")
       }
     }
-
-    if (await checkIfGitTagExistsForVersion(ctx, next_version))
-      throw new Error(
-        `Next version already exists as a git tag: ${next_version}. We tried to incremenet 10 times but the tag still exists. Consider deleting some git tags.`
-      )
   }
 
   if (!next_version)
